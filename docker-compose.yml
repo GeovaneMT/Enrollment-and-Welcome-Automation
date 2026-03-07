@@ -1,0 +1,104 @@
+services:
+  postgres-app:
+    image: postgres:16-alpine
+    container_name: postgres-app-enrollments
+    environment:
+      POSTGRES_DB: enrollments
+      POSTGRES_USER: blue_leader
+      POSTGRES_PASSWORD: Blue@aproved!
+    ports:
+      - "5434:5432"
+    volumes:
+      - app_postgres_data:/var/lib/postgresql/data
+      - ./sql/create_tables.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blue_leader -d enrollments"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-n8n:
+    image: postgres:16-alpine
+    container_name: postgres-n8n-internal
+    environment:
+      POSTGRES_DB: n8n_internal
+      POSTGRES_USER: blue_leader
+      POSTGRES_PASSWORD: Blue@aproved!
+    ports:
+      - "5433:5432"
+    volumes:
+      - n8n_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blue_leader -d n8n_internal"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-n8n
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n-selfhosted
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_ENCRYPTION_KEY=${N8N_SECRET_KEY}
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_EDITOR_BASE_URL=http://localhost:5678
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_DATABASE=n8n_internal
+      - DB_POSTGRESDB_HOST=postgres-n8n
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_USER=blue_leader
+      - DB_POSTGRESDB_PASSWORD=Blue@aproved!
+      - EXECUTIONS_MODE=queue
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      - N8N_DB_MIGRATIONS_ATTEMPTS=1
+      - N8N_DB_MIGRATIONS_RUN_ON_START=true
+      - NODE_FUNCTION_ALLOW_EXTERNAL=uuid
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      postgres-n8n:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  n8n-worker:
+    image: docker.n8n.io/n8nio/n8n:latest
+    command: worker
+    environment:
+      - N8N_ENCRYPTION_KEY=${N8N_SECRET_KEY}
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_DATABASE=n8n_internal
+      - DB_POSTGRESDB_HOST=postgres-n8n
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_USER=blue_leader
+      - DB_POSTGRESDB_PASSWORD=Blue@aproved!
+      - EXECUTIONS_MODE=queue
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      - N8N_DISABLE_MIGRATIONS=true
+      - NODE_FUNCTION_ALLOW_EXTERNAL=uuid
+    depends_on:
+      postgres-n8n:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  app_postgres_data:
+  n8n_postgres_data:
+  n8n_data:
