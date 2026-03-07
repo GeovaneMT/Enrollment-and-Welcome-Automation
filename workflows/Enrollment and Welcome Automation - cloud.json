@@ -1,0 +1,1063 @@
+{
+  "name": "Enrollment and Welcome Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/enrollments",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2384,
+        960
+      ],
+      "id": "5e44fe9e-c02b-4cfe-94de-32fa690ab905",
+      "name": "Webhook",
+      "webhookId": "d7a5f7be-2add-4d05-8c54-e16147e44214"
+    },
+    {
+      "parameters": {
+        "jsCode": "const { course, email, phone, fullName, birthDate } =  $input.first().json\n\nconst nameFormater = (name) => {\n  return name.toLowerCase()\n    .replace(/\\b\\w/g, l => l.toUpperCase());\n}\n\nconst phoneFormater = (phone) => {\n  return phone.replace(/\\D/g, '');\n}\n\nconst dateFormater = (birthDate) => {\n  birthDate;\n  const [day, month, year] = birthDate.split('/');\n  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;\n}\n\nconst emailFormater = (email) => {\n  return email.toLowerCase()\n}\n\nconst courseFormater = (course) => {\n  return course.toLowerCase()\n}\n\nconst formatedPhone = phoneFormater(phone);\nconst formatedName = nameFormater(fullName);\nconst formatedDate = dateFormater(birthDate);\nconst formatedEmail = emailFormater(email)\nconst formatedCourse = courseFormater(course)\n\nreturn [{\n  json: {\n    email: formatedEmail,\n    birthDate: formatedDate,\n    name: formatedName,\n    phone: formatedPhone,\n    course: formatedCourse,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1488,
+        864
+      ],
+      "id": "2f3e5d8f-0dfb-4527-a4de-81ff3c6dcd3d",
+      "name": "data-formater.ts"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6e827714-bb84-43d9-9e86-6375845b0b35",
+              "name": "course",
+              "value": "={{ $('Webhook').item.json.body.curso_escolhido }}",
+              "type": "string"
+            },
+            {
+              "id": "1500bdcd-a734-4796-bf4a-1b9204655e85",
+              "name": "email",
+              "value": "={{ $('Webhook').item.json.body.email_aluno }}",
+              "type": "string"
+            },
+            {
+              "id": "938c5dfb-ed80-47ba-8fd5-ea035ce4cf0b",
+              "name": "phone",
+              "value": "={{ $('Webhook').item.json.body.telefone }}",
+              "type": "string"
+            },
+            {
+              "id": "46709c32-39ee-47f5-81ba-c79cc8fba945",
+              "name": "fullName",
+              "value": "={{ $('Webhook').item.json.body.nome_completo }}",
+              "type": "string"
+            },
+            {
+              "id": "09472b64-d906-4693-b7f4-d8a292499106",
+              "name": "birthDate",
+              "value": "={{ $('Webhook').item.json.body.data_nascimento }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1712,
+        864
+      ],
+      "id": "bacc79f8-82bf-418a-9dd0-06ff86febcfe",
+      "name": "const fields"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=Erro: a matrícula com email {{ $('Validate Payload').item.json.data.email }} já existe.",
+        "options": {
+          "responseCode": 409
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -592,
+        880
+      ],
+      "id": "3c45a765-a067-4d6e-ab9c-8267590a287f",
+      "name": "Error 409 - enrollment already exists"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=Erro: Dados inválidos: {{ $json.errors }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -1712,
+        1056
+      ],
+      "id": "c78bb071-c8a3-4ad8-9d0c-08db58986318",
+      "name": "Error 400: Invalid Payload"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=Erro 400: Curso {{ $('data-formater.ts').item.json.course }} inválido",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -368,
+        1280
+      ],
+      "id": "689cd108-b0a6-484d-97a9-4efa936b7ed1",
+      "name": "Error 400:  Invalid course"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=A matrícula do estudante {{ $('data-formater.ts').item.json.name }} foi cadastrada com sucesso! 🚀\n\ndetalhes do seu registro:\n\nCurso: {{ $('data-formater.ts').item.json.course }}\n\nE-mail registrado: {{ $('data-formater.ts').item.json.email }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        80,
+        672
+      ],
+      "id": "eade02fa-7ec8-4f50-91f3-e4d6d519aada",
+      "name": "Student Enrolled Success"
+    },
+    {
+      "parameters": {
+        "jsCode": "const { curso_escolhido, email_aluno, telefone, nome_completo, data_nascimento } = $input.first().json.body\n\nconst errors = [];\n\nif (!telefone) errors.push(\"telefone é necessário\");\nif (!email_aluno) errors.push(\"email é necessário\");\nif (!curso_escolhido) errors.push(\"curso é necessário\");\nif (!nome_completo) errors.push(\"nome_completo é necessário\");\nif (!data_nascimento) errors.push(\"data_nascimento é necessário\");\n\nif (errors.length > 0) {\n  return [\n    {\n      json: {\n        valid: false,\n        errors\n      }\n    }\n  ];\n}\n\nconst isValidEmail = (email) => {\n  return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);\n};\n\nconst isValidPhone = (phone) => {\n  const cleaned = phone.replace(/\\D/g, '');\n  return cleaned.length >= 10 && cleaned.length <= 15;\n};\n\nconst isValidDate = (date) => {\n  const match = /^(\\d{2})\\/(\\d{2})\\/(\\d{4})$/.exec(date);\n  if (!match) return false;\n\n  const day = parseInt(match[1], 10);\n  const month = parseInt(match[2], 10);\n  const year = parseInt(match[3], 10);\n\n  if (month < 1 || month > 12) return false;\n\n  const daysInMonth = new Date(year, month, 0).getDate();\n\n  return day >= 1 && day <= daysInMonth;\n};\n\nconst normalizeName = (name) =>\n  name.toLowerCase().replace(/\\b\\w/g, l => l.toUpperCase());\n\nconst normalizePhone = (phone) =>\n  phone.replace(/\\D/g, '');\n\nconst normalizeDate = (date) => {\n  const [day, month, year] = date.split('/');\n  return `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}`;\n};\n\n\nif (!isValidEmail(email_aluno)) {\n  errors.push(\"formato de email inválido\");\n}\n\nif (!isValidPhone(telefone)) {\n  errors.push(\"número de telefone inválido\");\n}\n\nif (!isValidDate(data_nascimento)) {\n  errors.push(\"formato da data de nascimento inválida (DD/MM/YYYY expected)\");\n}\n\nconst course = curso_escolhido.toLowerCase();\n\nif (![\"tech\", \"business\"].includes(course)) {\n  errors.push(\"curso inválido (deve ser Tech ou Business)\");\n}\n\nif (errors.length > 0) {\n  return [\n    {\n      json: {\n        valid: false,\n        errors\n      }\n    }\n  ];\n}\n\nreturn [\n  {\n    json: {\n      valid: true,\n      data: {\n        email: email_aluno.toLowerCase(),\n        phone: normalizePhone(telefone),\n        name: normalizeName(nome_completo),\n        birthDate: normalizeDate(data_nascimento),\n        course\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2160,
+        960
+      ],
+      "id": "40ce709a-3ce8-461e-9dad-828f841c36f6",
+      "name": "Validate Payload"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Erro: O banco de dados não conseguiu verificar se o aluno já estava matriculado.",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -816,
+        768
+      ],
+      "id": "a6df1d31-67dd-407d-8242-69c8f7960e0b",
+      "name": "Error 400: Database check fail"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Erro: Os dados não foram persistidos no banco de dados.",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -144,
+        1040
+      ],
+      "id": "a5330214-f1a4-44e8-9571-6f5a679dc9f4",
+      "name": "Error 400: Data not persisted"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=Erro: O email não pode ser enviado. Informe a pessoa responsável para entrar em contato com o estudante:\n\nnome:\n{{ $json.Nome }}\n\nemail:\n{{ $json.Email }}\n\ntelefone:\n{{ $json.Telefone }}\n\nid da matrícula:\n{{ $json.id }}\n\ncurso:\n{{ $json.Curso }}\n\nMensagem de erro:\n{{ $json.error }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        80,
+        864
+      ],
+      "id": "21d44208-fa1e-44c1-9b8c-565c98c68dab",
+      "name": "Error 400: Email not sent"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0068df7a-4aa1-4cf9-9b3c-e536f6d21e0b",
+              "leftValue": "={{ $json.Email }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "1ebdcd24-2744-4e11-822b-d48f07f1b417",
+              "leftValue": "={{ $('find email on Business').item.json.Email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -816,
+        984
+      ],
+      "id": "d794aeae-0969-4d8f-8c97-b69fff3b59a1",
+      "name": "student already enrolled?"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('data-formater.ts').item.json.course }}",
+                    "rightValue": "tech",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "50f79a5f-ef34-45bf-882b-727d4be1554a"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "isCourseTech"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "5c0552c7-9256-48c9-bf63-5cb376fba31d",
+                    "leftValue": "={{ $('data-formater.ts').item.json.course }}",
+                    "rightValue": "business",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "isCourseBusiness"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -592,
+        1072
+      ],
+      "id": "85af4e82-e181-49ab-a007-84669e9185b4",
+      "name": "Course Switch",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "ygh8lw5bfCftwzE3",
+          "mode": "list",
+          "cachedResultName": "tech_enroll",
+          "cachedResultUrl": "/projects/aS9u7C2k8adxPtDh/datatables/ygh8lw5bfCftwzE3"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $('data-formater.ts').item.json.email }}",
+            "Telefone": "={{ $('data-formater.ts').item.json.phone }}",
+            "Data_Nascimento": "={{ $('data-formater.ts').item.json.birthDate }}",
+            "Nome": "={{ $('data-formater.ts').item.json.name }}",
+            "Curso": "={{ $('data-formater.ts').item.json.course }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Nome",
+              "displayName": "Nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Data_Nascimento",
+              "displayName": "Data_Nascimento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Telefone",
+              "displayName": "Telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Curso",
+              "displayName": "Curso",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        720
+      ],
+      "id": "ae2d5714-a6f3-4406-89fa-09afae0914d1",
+      "name": "Persist Tech course enrollment",
+      "alwaysOutputData": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "TEOJnp9FMimRc211",
+          "mode": "list",
+          "cachedResultName": "biz_enroll",
+          "cachedResultUrl": "/projects/aS9u7C2k8adxPtDh/datatables/TEOJnp9FMimRc211"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $('data-formater.ts').item.json.email }}",
+            "Telefone": "={{ $('data-formater.ts').item.json.phone }}",
+            "Data_Nascimento": "={{ $('data-formater.ts').item.json.birthDate }}",
+            "Nome": "={{ $('data-formater.ts').item.json.name }}",
+            "Curso": "={{ $('data-formater.ts').item.json.course }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Nome",
+              "displayName": "Nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Data_Nascimento",
+              "displayName": "Data_Nascimento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Telefone",
+              "displayName": "Telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Curso",
+              "displayName": "Curso",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        1088
+      ],
+      "id": "d4e32c3b-5e46-4fa3-82be-70b78a0985fa",
+      "name": "Persist Business course enrollment",
+      "alwaysOutputData": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT email\nFROM tech_enrollments\nWHERE email = '{{ $json.email }}'\n\nUNION\n\nSELECT email\nFROM biz_enrollments\nWHERE email = '{{ $json.email }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2384,
+        0
+      ],
+      "id": "af3763ae-4579-4fca-b1fd-43e27da6b98f",
+      "name": "Check duplicate Student",
+      "alwaysOutputData": true,
+      "disabled": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tech_enrollments",
+          "mode": "list",
+          "cachedResultName": "tech_enrollments"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email": "={{ $('data-formater.ts').item.json.email }}",
+            "phone": "={{ $('data-formater.ts').item.json.phone }}",
+            "course": "={{ $('data-formater.ts').item.json.course }}",
+            "fullname": "={{ $('data-formater.ts').item.json.name }}",
+            "birthdate": "={{ $('data-formater.ts').item.json.birthDate }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "birthdate",
+              "displayName": "birthdate",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "course",
+              "displayName": "course",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fullname",
+              "displayName": "fullname",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2384,
+        224
+      ],
+      "id": "b7685cdd-aa1d-4181-b939-04c8d969b412",
+      "name": "Persist Tech course enrollment1",
+      "alwaysOutputData": true,
+      "disabled": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "biz_enrollments",
+          "mode": "list",
+          "cachedResultName": "biz_enrollments"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email": "={{ $('data-formater.ts').item.json.email }}",
+            "phone": "={{ $('data-formater.ts').item.json.phone }}",
+            "course": "={{ $('data-formater.ts').item.json.course }}",
+            "fullname": "={{ $('data-formater.ts').item.json.name }}",
+            "birthdate": "={{ $('data-formater.ts').item.json.birthDate }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "birthdate",
+              "displayName": "birthdate",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "course",
+              "displayName": "course",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fullname",
+              "displayName": "fullname",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2384,
+        448
+      ],
+      "id": "b856ac59-2ee8-4c17-a8e4-8e39ec65c2cf",
+      "name": "Persist Business course enrollment1",
+      "alwaysOutputData": true,
+      "disabled": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4a3a64fc-78fa-4b19-a341-a8cedc4d0387",
+              "leftValue": "={{ $json.errors }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "array",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1936,
+        960
+      ],
+      "id": "7bd20576-0a08-4b42-8b57-2aa1417ee076",
+      "name": "Is Payload valid"
+    },
+    {
+      "parameters": {
+        "fromEmail": "gmtgeovane@gmail.com",
+        "toEmail": "={{ $json.Email }}",
+        "subject": "=Matrícula Confirmada! 🎉 Bem-vindo(a) ao curso {{ $json.Curso }}",
+        "html": "=Olá, {{ $json.Nome }},\n\nSua matrícula no curso {{ $json.Curso }} foi recebida com sucesso! 🚀\n\nEstamos muito felizes em ter você conosco nessa jornada de aprendizado. Abaixo, você encontra os detalhes do seu registro:\n\nMatrícula (ID): \n{{ $json.id }} \n\nCurso: \n{{ $json.Curso }}\n\nData de Inscrição:\n{{ $json.createdAt }}\n\nE-mail registrado:\n{{ $json.Email }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        -144,
+        768
+      ],
+      "id": "4512935a-65e6-40a2-a919-0b3b5bddf5d2",
+      "name": "Send email",
+      "webhookId": "cd301ef9-efdd-4ac6-9561-d3fb7a7ecb63",
+      "alwaysOutputData": false,
+      "credentials": {
+        "smtp": {
+          "id": "esRlBxgmRJFebIue",
+          "name": "SMTP account 5"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "TEOJnp9FMimRc211",
+          "mode": "list",
+          "cachedResultName": "biz_enroll",
+          "cachedResultUrl": "/projects/aS9u7C2k8adxPtDh/datatables/TEOJnp9FMimRc211"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "=Email",
+              "keyValue": "={{ $('data-formater.ts').item.json.email }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -1264,
+        864
+      ],
+      "id": "5a214739-83c6-465a-9ad3-ec1419440888",
+      "name": "find email on Business",
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "ygh8lw5bfCftwzE3",
+          "mode": "list",
+          "cachedResultName": "tech_enroll",
+          "cachedResultUrl": "/projects/aS9u7C2k8adxPtDh/datatables/ygh8lw5bfCftwzE3"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "=Email",
+              "keyValue": "={{ $('data-formater.ts').item.json.email }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -1040,
+        936
+      ],
+      "id": "bb58f402-c331-4a9d-88b1-ec1b1c83f472",
+      "name": "find email on Tech",
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "data-formater.ts": {
+      "main": [
+        [
+          {
+            "node": "find email on Business",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "const fields": {
+      "main": [
+        [
+          {
+            "node": "data-formater.ts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Payload": {
+      "main": [
+        [
+          {
+            "node": "Is Payload valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Course Switch": {
+      "main": [
+        [
+          {
+            "node": "Persist Tech course enrollment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Persist Business course enrollment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error 400:  Invalid course",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "student already enrolled?": {
+      "main": [
+        [
+          {
+            "node": "Error 409 - enrollment already exists",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Course Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Tech course enrollment": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error 400: Data not persisted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Business course enrollment": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error 400: Data not persisted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Payload valid": {
+      "main": [
+        [
+          {
+            "node": "const fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error 400: Invalid Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send email": {
+      "main": [
+        [
+          {
+            "node": "Student Enrolled Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error 400: Email not sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "find email on Business": {
+      "main": [
+        [
+          {
+            "node": "find email on Tech",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error 400: Database check fail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "find email on Tech": {
+      "main": [
+        [
+          {
+            "node": "student already enrolled?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error 400: Database check fail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0a09b6ea-a8f0-436a-8403-952fa7a3d8a2",
+  "meta": {
+    "instanceId": "dc0bcbaed5942825d40eb7dd9dcbb6ab0108046af92a3af9d5e04ea54a24a948"
+  },
+  "id": "eAAnKzJUfoiEJp6b",
+  "tags": []
+}
