@@ -18,5 +18,6 @@ A mesma matrícula pode ser persistida mais de uma vez no banco de dados.
 cp .env.example .env
 docker-compose up -d
 # Acesse http://localhost:5678
+```
 
 **Talvez seja necessário iniciar os containeres mais uma vez após sua criação**
