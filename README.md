@@ -1,5 +1,8 @@
 # Automação de Matrículas 4Blue - n8n Self-Hosted & 4blue Cloud
 
+# Vídeo de apresentação do projeto: 
+[Vídeo de apresentação - Google Drive](https://drive.google.com/file/d/1ZG28FtHTz6dVZcMeIa_wyYMB6Z4NH5Yi/view?usp=sharing)
+
 ## 🎯 Desafio Técnico Individual
 
 ### Desafio Oculto Identificado:
